@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Skin Analysis | Face Capture</title>
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --primary: #2563eb;
+        --primary-hover: #1d4ed8;
+        --success: #10b981;
+        --error: #ef4444;
+        --warning: #f59e0b;
+        --bg: #f8fafc;
+        --text-main: #1e293b;
+        --text-muted: #64748b;
+        --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    body { 
+        font-family: 'Inter', sans-serif; 
+        background-color: var(--bg); 
+        color: var(--text-main);
+        margin: 0; 
+        padding: 40px 20px; 
+        line-height: 1.5;
+    }
+
+    /* Main card container */
+    .container { 
+        max-width: 900px; 
+        margin: 0 auto; 
+        background: white; 
+        border-radius: 16px; 
+        padding: 40px; 
+        box-shadow: var(--card-shadow); 
+    }
+
+    h1 { 
+        font-size: 24px; 
+        font-weight: 700; 
+        margin-bottom: 8px;
+        color: var(--text-main);
+    }
+
+    .subtitle {
+        color: var(--text-muted);
+        margin-bottom: 32px;
+    }
+
+    /* Instructions Section */
+    .instructions-grid { 
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-bottom: 32px;
+        text-align: left;
+    }
+
+    .instruction-card {
+        background: #f1f5f9;
+        padding: 16px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text-main);
+    }
+
+    .instruction-icon {
+        background: white;
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    /* Video & Overlay Styling */
+    .video-wrapper {
+        position: relative;
+        display: block;
+        width: 80%;    
+        max-width: 100%; 
+        margin: 0 auto 24px auto; 
+        border-radius: 16px;
+        overflow: hidden;
+        background: #000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        aspect-ratio: 4 / 3; 
+    }
+
+    /* Live webcam video */
+    #videoElement { 
+        width: 100%; 
+        height: 100%; 
+        display: block;
+        object-fit: cover;
+    }
+
+    /* Canvas overlay for face guide ellipse */
+    .overlay { 
+        position: absolute; 
+        top: 0; 
+        left: 0; 
+        width: 100%; 
+        height: 100%; 
+        pointer-events: none; 
+    }
+
+    .countdown-overlay {
+        position: absolute;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.6);
+        backdrop-filter: blur(4px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 10;
+    }
+
+    .countdown-text {
+        font-size: 48px;
+        font-weight: 800;
+        color: white;
+        text-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .status-bar { 
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        margin-bottom: 32px; 
+    }
+
+    .status-item { 
+        padding: 12px; 
+        border-radius: 10px; 
+        font-size: 13px; 
+        font-weight: 600; 
+        transition: all 0.3s ease;
+        border: 1px solid transparent;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+
+    /* Status color states */
+    .status-ok { 
+        background-color: #ecfdf5; 
+        color: var(--success);
+        border-color: #10b98133;
+    }
+    .status-not-ok { 
+        background-color: #fef2f2; 
+        color: var(--error);
+        border-color: #ef444433;
+    }
+    .status-checking { 
+        background-color: #fffbeb; 
+        color: var(--warning);
+        border-color: #f59e0b33;
+    }
+
+    /* Buttons */
+    .action-group {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    button { 
+        font-family: inherit;
+        font-weight: 600;
+        background-color: var(--primary); 
+        color: white; 
+        border: none; 
+        padding: 12px 24px; 
+        border-radius: 10px; 
+        cursor: pointer; 
+        font-size: 15px; 
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    button:hover:not(:disabled) { 
+        background-color: var(--primary-hover); 
+        transform: translateY(-1px);
+    }
+
+    button:active:not(:disabled) {
+        transform: translateY(0);
+    }
+
+    button:disabled { 
+        background-color: #e2e8f0; 
+        color: #94a3b8;
+        cursor: not-allowed; 
+    }
+
+    #stopBtn { background-color: #f1f5f9; color: var(--text-main); }
+    #stopBtn:hover:not(:disabled) { background-color: #e2e8f0; }
+
+    .message {
+        margin: 16px 0;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        display: none;
+    }
+    .error-message { background-color: #fef2f2; color: var(--error); border: 1px solid #fecaca; }
+    .success-message { background-color: #f0fdf4; color: var(--success); border: 1px solid #bbf7d0; }
+
+</style>
+</head>
+<body>
+
+<div class="container">
+    <center><h1>AI Skin Analysis</h1></center>
+    <br>
+
+    <!-- Disclaimer for medical safety -->
+    <div class="disclaimer">
+        <strong>Medical Disclaimer:</strong> This AI-powered tool is intended for informational and educational purposes only. It does not provide medical diagnosis, treatment, or prevention of any skin disease. Always seek the advice of a qualified dermatologist or healthcare provider for any medical concerns.
+    </div>
+    <br>
+    
+    <!-- User instructions -->
+    <div class="instructions-grid">
+        <div class="instruction-card">
+            <center>Remove glasses or sunglasses</center>
+        </div>
+        <div class="instruction-card">
+            <center>Center your face in the guide</center>
+        </div>
+        <div class="instruction-card">
+            <center>Maintain arm's length distance</center>            
+        </div>
+        <div class="instruction-card">
+            <center>Ensure even, bright lighting</center>            
+        </div>
+    </div>
+
+    <!-- Video feed and overlays -->
+    <div class="video-wrapper">
+        <video id="videoElement" autoplay muted></video>
+        <canvas class="overlay" id="overlayCanvas"></canvas>
+        <!-- Countdown before auto-capture -->
+        <div id="countdownOverlay" class="countdown-overlay">
+            <div id="countdownText" class="countdown-text"></div>
+        </div>
+    </div>
+
+    <!-- Status indicators -->
+    <div class="status-bar">
+        <div id="glassesStatus" class="status-item status-checking">
+            <span style="font-size: 10px; opacity: 0.7;">EYEWEAR</span>
+            <span>Checking...</span>
+        </div>
+        <div id="centerStatus" class="status-item status-checking">
+            <span style="font-size: 10px; opacity: 0.7;">ALIGNMENT</span>
+            <span>Checking...</span>
+        </div>
+        <div id="distanceStatus" class="status-item status-checking">
+            <span style="font-size: 10px; opacity: 0.7;">PROXIMITY</span>
+            <span>Checking...</span>
+        </div>
+    </div>
+
+    <!-- Feedback messages -->
+    <div id="errorMessage" class="message error-message"></div>
+    <div id="successMessage" class="message success-message"></div>
+
+    <!-- Control buttons -->
+    <div class="action-group" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: center;">
+        <button id="startBtn" onclick="startCamera()">Start Camera</button>
+        <button id="stopBtn" onclick="stopCamera()" disabled>Stop Analysis</button>
+        <button id="captureBtn" onclick="manualCapture()" disabled>Manual Capture</button>
+
+        <div style="margin-top: 20px; padding: 20px; border-top: 1px solid #e2e8f0; width: 100%;">
+            <div style="display: flex; gap: 10px; align-items: center; justify-content: center;">
+                <input type="file" id="image_upload" accept="image/*" style="font-size: 14px;">
+                <button id="uploadBtn" onclick="handleFileUpload()">Process Uploaded Image</button>
+            </div>
+            <div id="uploadStatus" style="font-size: 13px; margin-top: 10px; color: var(--primary);"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Global variables
+    let videoElement = document.getElementById('videoElement');
+    let overlayCanvas = document.getElementById('overlayCanvas');
+    let overlayCtx = overlayCanvas.getContext('2d');
+
+    let stream = null; // Webcam stream
+    let validationInterval = null; // Periodic validation timer
+    let countdownInterval = null; // Countdown timer
+    let countdownValue = 0;
+    let allStatusOk = false;
+
+    let currentStatus = { glasses: 'checking', face_center: 'checking', distance: 'checking' };
+
+    // Start camera
+    async function startCamera() {
+        try {
+            stream = await navigator.mediaDevices.getUserMedia({ video: { width: 640, height: 480, facingMode: 'user' } });
+            videoElement.srcObject = stream;
+            // Enable/disable buttons
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('stopBtn').disabled = false;
+            document.getElementById('captureBtn').disabled = false;
+            hideMessage('error');
+            showMessage('success', 'Camera active and scanning...');
+            startValidation();
+        } catch (error) {
+            showMessage('error', 'Camera access denied: ' + error.message);
+        }
+    }
+
+    // Stop camera
+    function stopCamera() {
+        if (stream) { stream.getTracks().forEach(track => track.stop()); stream = null; }
+        if (validationInterval) clearInterval(validationInterval);
+        stopCountdown();
+        resetStatusDisplay();
+        document.getElementById('startBtn').disabled = false;
+        document.getElementById('stopBtn').disabled = true;
+        document.getElementById('captureBtn').disabled = true;
+    }
+
+    // Periodic face validation
+    function startValidation() {
+        validationInterval = setInterval(async () => {
+            if (!stream) return;
+            // Capture current frame
+            const canvas = document.createElement('canvas');
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            canvas.getContext('2d').drawImage(videoElement, 0, 0);
+            // Send frame to backend
+            canvas.toBlob(async (blob) => {
+                if (!blob) return;
+                const formData = new FormData();
+                formData.append('image_file', blob, 'frame.jpg');
+                try {
+                    const response = await fetch('/validate_face', { method: 'POST', body: formData });
+                    if (response.ok) {
+                        const result = await response.json();
+                        updateStatus(result);
+                    }
+                } catch (err) { console.error('Validation error:', err); }
+            }, 'image/jpeg', 0.8);
+        }, 500);
+    }
+
+    // Update status UI
+    function updateStatus(status) {
+        currentStatus = status;
+
+        const gEl = document.getElementById('glassesStatus');
+        gEl.className = 'status-item ' + (status.glasses==='ok'? 'status-ok':'status-not-ok');
+        gEl.innerHTML = `<span style="font-size:10px;opacity:0.7;">EYEWEAR</span><span>${status.glasses==='ok'?'Clear':'Remove Glasses'}</span>`;
+
+        const cEl = document.getElementById('centerStatus');
+        cEl.className = 'status-item ' + (status.face_center==='ok'? 'status-ok':'status-not-ok');
+        cEl.innerHTML = `<span style="font-size:10px;opacity:0.7;">ALIGNMENT</span><span>${status.face_center==='ok'?'Centered':'Adjust Position'}</span>`;
+
+        const dEl = document.getElementById('distanceStatus');
+        dEl.className = 'status-item ' + (status.distance==='ok'? 'status-ok':'status-not-ok');
+        dEl.innerHTML = `<span style="font-size:10px;opacity:0.7;">PROXIMITY</span><span>${status.distance==='ok'?'Optimal':'Adjust Distance'}</span>`;
+
+        const newAllStatusOk = status.glasses==='ok' && status.face_center==='ok' && status.distance==='ok';
+        if (newAllStatusOk && !allStatusOk) startCountdown();
+        else if (!newAllStatusOk && allStatusOk) stopCountdown();
+        allStatusOk = newAllStatusOk;
+    }
+
+    async function handleFileUpload() {
+        const fileInput = document.getElementById('image_upload');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const statusDiv = document.getElementById('uploadStatus');
+
+        if (fileInput.files.length === 0) {
+            alert("Please select an image file first.");
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        // Use "image_file" to match your FastAPI backend variable name
+        formData.append("image_file", file);
+
+        // UI Feedback
+        uploadBtn.disabled = true;
+        statusDiv.textContent = "Analyzing uploaded image... please wait.";
+
+        try {
+            const response = await fetch('/process_final_image', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                
+                if (result.success) {
+                    // REDIRECT LOGIC
+                    // We construct the URL parameters just like the webcam capture does
+                    const params = new URLSearchParams({
+                        image_path: result.image_path,
+                        skin_type: result.skin_type,
+                        skin_issues: result.skin_issues.join(',')
+                    });
+                    
+                    // Change page to results
+                    window.location.href = `/results?${params.toString()}`;
+                } else {
+                    statusDiv.textContent = "Error: " + result.message;
+                    uploadBtn.disabled = false;
+                }
+            } else {
+                statusDiv.textContent = "Server error during processing.";
+                uploadBtn.disabled = false;
+            }
+        } catch (err) {
+            console.error(err);
+            statusDiv.textContent = "Connection error.";
+            uploadBtn.disabled = false;
+        }
+    }
+
+    // Auto capture countdown
+    function startCountdown() {
+        if (countdownInterval) return;
+        countdownValue = 3;
+        const overlay = document.getElementById('countdownOverlay');
+        const text = document.getElementById('countdownText');
+        overlay.style.display = 'flex';
+        text.textContent = countdownValue;
+
+        countdownInterval = setInterval(() => {
+            countdownValue--;
+            if (countdownValue > 0) {
+                text.textContent = countdownValue;
+            } else {
+                autoCapture();
+                stopCountdown();
+            }
+        }, 1000);
+    }
+
+    function stopCountdown() {
+        if (countdownInterval) { clearInterval(countdownInterval); countdownInterval = null; }
+        document.getElementById('countdownOverlay').style.display = 'none';
+    }
+
+    // Capture image
+    async function autoCapture() { if (allStatusOk) await captureAndProcess(); }
+    async function manualCapture() { await captureAndProcess(); }
+
+    async function captureAndProcess() {
+        if (!stream) return;
+        if (validationInterval) { clearInterval(validationInterval); validationInterval = null; }
+        showMessage('success','Capturing high-resolution scan...');
+        const canvas = document.createElement('canvas');
+        canvas.width = videoElement.videoWidth;
+        canvas.height = videoElement.videoHeight;
+        canvas.getContext('2d').drawImage(videoElement,0,0);
+
+        canvas.toBlob(async (blob) => {
+            if (!blob) return;
+            const formData = new FormData();
+            formData.append('image_file', blob, 'captured.jpg');
+            try {
+                const response = await fetch('/process_final_image', { method:'POST', body: formData });
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        const params = new URLSearchParams({
+                            image_path: result.image_path,
+                            skin_type: result.skin_type,
+                            skin_issues: result.skin_issues.join(',')
+                        });
+                        window.location.href = `/results?${params.toString()}`;
+                    } else showMessage('error', result.message);
+                }
+            } catch (err) { showMessage('error', 'Processing error: ' + err.message); }
+        }, 'image/jpeg', 0.9);
+    }
+
+    function resetStatusDisplay() {
+        ['glassesStatus','centerStatus','distanceStatus'].forEach(id => {
+            document.getElementById(id).className = 'status-item status-checking';
+        });
+        document.getElementById('glassesStatus').innerHTML='<span style="font-size:10px;opacity:0.7;">EYEWEAR</span><span>Checking...</span>';
+        document.getElementById('centerStatus').innerHTML='<span style="font-size:10px;opacity:0.7;">ALIGNMENT</span><span>Checking...</span>';
+        document.getElementById('distanceStatus').innerHTML='<span style="font-size:10px;opacity:0.7;">PROXIMITY</span><span>Checking...</span>';
+        allStatusOk=false;
+    }
+
+    // Messages
+    function showMessage(type,msg){
+        hideMessage('error'); hideMessage('success');
+        const el = document.getElementById(type==='error'?'errorMessage':'successMessage');
+        el.textContent = msg; el.style.display='block';
+        if(type==='success') setTimeout(()=>hideMessage('success'),3000);
+    }
+    function hideMessage(type){ document.getElementById(type==='error'?'errorMessage':'successMessage').style.display='none'; }
+
+    function initializeOverlay() {
+        // Set internal canvas resolution to match its display size for sharpness
+        overlayCanvas.width = overlayCanvas.clientWidth;
+        overlayCanvas.height = overlayCanvas.clientHeight;
+        
+        overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+        overlayCtx.strokeStyle = 'rgba(255, 255, 255, 0.5)'; 
+        overlayCtx.lineWidth = 2; 
+        overlayCtx.setLineDash([8, 8]);
+        
+        // Calculate center based on the dynamic width/height
+        const cx = overlayCanvas.width / 2;
+        const cy = overlayCanvas.height / 2;
+        
+        overlayCtx.beginPath(); 
+        // Draw ellipse relative to the current size
+        overlayCtx.ellipse(cx, cy, overlayCanvas.width * 0.22, overlayCanvas.height * 0.32, 0, 0, 2 * Math.PI); 
+        overlayCtx.stroke();
+    }
+
+    function uploadImage() {
+        const fileInput = document.getElementById('fileInput');
+        const status = document.getElementById("status");
+        const btn = document.getElementById("uploadBtn");
+
+        if (fileInput.files.length === 0) {
+            alert("Please select an image file first.");
+            return;
+        }
+
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append("image_file", file);
+
+        status.innerText = "Uploading and processing...";
+        btn.disabled = true;
+
+        fetch('/process_final_image', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                // Construct the URL for the results page
+                const params = new URLSearchParams({
+                    image_path: data.image_path,
+                    skin_type: data.skin_type,
+                    skin_issues: data.skin_issues.join(',')
+                });
+                window.location.href = `/results?${params.toString()}`;
+            } else {
+                status.innerText = "Processing failed.";
+                btn.disabled = false;
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            status.innerText = "Error uploading image.";
+            btn.disabled = false;
+        });
+    }
+
+    // On page load
+    window.onload = () => {
+        initializeOverlay();
+        if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            showMessage('error','Webcam not supported on this browser');
+            document.getElementById('startBtn').disabled=true;
+        }
+    };
+</script>
+</body>
+</html>

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnostic Results | AI Skin Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-light: #eff6ff;
+            --success: #10b981;
+            --error: #ef4444;
+            --bg: #f8fafc;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.6;
+        }
+
+        /* Main container card */
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: var(--card-shadow);
+        }
+
+        /* Header Navigation */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .header h1 {
+            font-size: 22px;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-main);
+        }
+
+        /* Timestamp for analysis generation */
+        .timestamp {
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+
+        /* Grid Layout */
+        .results-grid {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 40px;
+        }
+
+        /* Image Section */
+        .image-wrapper {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            border: 1px solid #e2e8f0;
+            height: fit-content;
+        }
+
+        .captured-image {
+            width: 100%;
+            display: block;
+            object-fit: cover;
+        }
+
+        .scan-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            border: 2px solid var(--primary);
+            box-sizing: border-box;
+            opacity: 0.3;
+            pointer-events: none;
+        }
+
+        /* Analysis Section */
+        .analysis-section {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .report-label {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        /* Card layout for each result */
+        .result-card {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #e2e8f0;
+        }
+
+        /* Highlighted skin type badge */
+        .skin-type-badge {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 6px 16px;
+            border-radius: 99px;
+            font-weight: 700;
+            font-size: 18px;
+            margin-top: 4px;
+        }
+
+        /* Detected issue tag */
+        .issue-tag {
+            background: white;
+            border: 1px solid #fee2e2;
+            color: var(--error);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        /* Bullet dot before issue name */
+        .issue-tag::before { content: '•'; font-size: 20px; }
+
+        /* Shown when no issues are detected */
+        .no-issues {
+            color: var(--success);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Recommendations Area */
+        .recommendations {
+            background: var(--primary-light);
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #dbeafe;
+        }
+
+        .recommendations h3 {
+            margin-top: 0;
+            font-size: 16px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rec-list {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 14px;
+            color: #1e40af;
+        }
+
+        .rec-list li { margin-bottom: 8px; }
+
+        /* Action Buttons */
+        .actions {
+            margin-top: 40px;
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            font-family: inherit;
+            font-weight: 600;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 15px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        /* Primary action button */
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
+
+        /* Secondary / outline button */
+        .btn-outline { background: white; color: var(--text-main); border: 1px solid #e2e8f0; }
+        .btn-outline:hover { background: #f1f5f9; }
+
+        /* Responsive Design */
+        @media (max-width: 850px) {
+            .results-grid { grid-template-columns: 1fr; }
+            .container { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Analysis Report</h1>
+        <div class="timestamp"><span id="dateDisplay"></span></div>
+    </div>
+
+    <!-- Main results grid -->
+    <div class="results-grid">
+        <!-- Facial image column -->
+        <div class="image-column">
+            <div class="image-wrapper">
+                <!-- Image URL provided dynamically from backend -->
+                <img src="{{ image_url }}" alt="Analyzed face" class="captured-image">
+                <div class="scan-overlay"></div>
+            </div>
+        </div>
+
+        <div class="analysis-section">
+            
+            <!-- Skin type result -->
+            <div class="result-card">
+                <span class="report-label">Primary Skin Type</span>
+                <div class="skin-type-badge">{{ skin_type|upper }}</div>
+                <!-- Short explanation -->
+                <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px;">
+                    Our model has identified your skin characteristics as primarily <strong>{{ skin_type }}</strong> based on surface lipid levels and pore visibility.
+                </p>
+            </div>
+
+            <!-- Detected skin issues -->
+            <div class="result-card">
+                <span class="report-label">Detected Concerns</span>
+                {% if skin_issues and skin_issues|length > 0 %}
+                    <div style="margin-top: 10px;">
+                        {% for issue in skin_issues %}
+                            <div class="issue-tag">{{ issue }}</div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="no-issues">No clinical concerns detected</div>
+                {% endif %}
+            </div>
+
+            <!-- User actions -->
+            <div class="actions">
+                <!-- Restart analysis -->
+                <a href="/face_capture" class="btn btn-primary">New Analysis</a>
+                <!-- Print / Save as PDF -->
+                <button onclick="window.print()" class="btn btn-outline">Download PDF</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Display the current date and time
+    const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+    document.getElementById('dateDisplay').textContent = new Date().toLocaleDateString('en-US', options);
+</script>
+
+</body>
+</html>

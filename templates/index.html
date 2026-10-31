@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Face Capture System</title>
+</head>
+<body style="text-align:center;">
+    <h1>Face Detection with Glasses & Lighting Check</h1>
+    <!-- Live video stream from backend -->
+    <img src="/video_feed" width="720" height="540" />
+    <br><br>
+    <button onclick="captureImage()">Capture Face</button>
+    <hr style="margin: 40px 0; border: 0; border-top: 1px solid #eee;">
+    <!-- Status text (e.g., Capturing..., Face Captured, Error) -->
+    <h3 id="status"></h3>
+    <!-- Preview container for displaying the last captured face image -->
+    <div id="preview"></div>
+
+    <script>
+        // Capture the current face frame from the video stream
+        function captureImage() {
+            fetch('/capture', { method: 'POST' })
+                .then(res => res.json())
+                .then(() => {
+                    // Update UI status
+                    document.getElementById("status").innerText = "Capturing...";
+                    // Delay added to allow backend time to save the captured image
+                    setTimeout(() => {
+                        fetch('/last_capture')
+                            .then(res => res.json())
+                            .then(data => {
+                                // If image path exists, show preview
+                                if (data.image_path) {
+                                    document.getElementById("status").innerText = "Face Captured";
+                                    document.getElementById("preview").innerHTML =
+                                        `<img src="${data.image_path}" width="200">`;
+                                } else {
+                                    document.getElementById("status").innerText = "No image captured";
+                                }
+                            });
+                    }, 2000); // 2-second delay
+                });
+        }
+    </script>
+</body>
+</html>
